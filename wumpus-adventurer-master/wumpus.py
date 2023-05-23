@@ -17,7 +17,7 @@ class ExplorerAgent(Agent):
         super().__init__()
         self._bump = False #에이전트가 벽에 부딪혔는지 여부를 나타내는 플래그
         self._facing_direction = 'Up' #현재 에이전트가 바라보고 있는 방향
-        self._holding = [ Arrow() ] #에이전트가 들고 있는 아이템을 저장하는 리스트
+        self._holding = [ Arrow(), Arrow() ] #에이전트가 들고 있는 아이템을 저장하는 리스트
 
     @property
     def image_filename(self): #image_filename은 현재 에이전트가 바라보는 방향에 따라 이미지 파일 이름을 반환하는 속성
@@ -27,16 +27,24 @@ class ExplorerAgent(Agent):
 
 class WumpusEnvironment(XYEnvironment):
 
-    START_SQUARE = (0,0) # 환경의 시작 위치
+    START_SQUARE = (1,1) # 환경의 시작 위치
     CAN_COEXIST = False #에이전트와 다른 객체가 하나의 위치를 공유할 수 있는지 여부
     __instance = None
+    SideWalls=True #외벽 사용 유무, 사용시 6by6으로 변경 및 외벽 추가
+
     
     def __init__(self, width=4, height=4):
         if WumpusEnvironment.__instance != None:
             raise Exception("Singleton class cannot be instantiated more than once")
         else:
             WumpusEnvironment.__instance = self
-        super().__init__(width, height)
+        if self.SideWalls:
+            width=6
+            height=6
+            super().__init__(width, height)
+            self. addSideWalls() #6,6으로 설정하여 사방에 벽 생성
+        else:
+            super().__init__(width, height)
         self.add_wumpus() #웜푸스 추가
         self.add_pits() #구덩이 추가
         #self.add_walls()# 벽 추가
@@ -45,46 +53,32 @@ class WumpusEnvironment(XYEnvironment):
         self._do_scream = False #이 변수는 웜푸스가 에이전트를 공격했는지 여부
         self.die_flag = False
         
+        
     @classmethod
     def get_instance(cls):
         if cls.__instance == None:
             cls()
         return cls.__instance
         
-    '''
-    def reset_game(self):
-        stud_module = importlib.import_module('ashtabna_ExplorerAgent')
-        Explorer_class = getattr(stud_module,'ashtabna_ExplorerAgent')
-        explorer = Explorer_class()
-        self.add_thing(explorer, self.START_SQUARE)
-        self.delete_thing(self.agents[0]) # 에이전트 삭제
-        self._is_done_executing = False # 게임 종료 여부 초기화
-    '''
-    def percept(self, agent): # 현재 환경 정보
-        '''
-        The percept is a 5-tuple, each element of which is a string or None,
-        depending on whether that sensor is triggered:
 
-        Element 0: 'Stench' or None
-        Element 1: 'Breeze' or None
-        Element 2: 'Glitter' or None
-        Element 3: 'Bump' or None
-        Element 4: 'Scream' or None
-        '''
-        things_adj = [ t for t,_ in self.things_near(self[agent], 1) #에이전트 근처에 있는 모든 객체를 저장
-                if not isinstance(t, ExplorerAgent) ] #ExplorerAgent는 이웃 객체가 아니므로, things_adj 리스트에서 제외
-        stench = 'Stench' if any([isinstance(x, Wumpus) for x in things_adj])\
-                else None # 주변에 Wumpus 객체가 있는 경우 'Stench' 문자열 + 그렇지 않은 경우 None을 저장
-        breeze = 'Breeze' if any([isinstance(x, Pit) for x in things_adj])\
-                else None #변수는 주변에 Pit 객체가 있는 경우 'Breeze' 문자열 +  그렇지 않은 경우 None을 저장
-        glitter = 'Glitter' \
-            if len(self.list_things_at(self[agent], Gold)) > 0 else None #변수는 에이전트 위치에서 Gold 객체가 있는 경우 'Glitter' 문자열 + 그렇지 않은 경우 None을 저장
-        bump = ('Bump' if agent._bump else None) #에이전트가 벽에 부딪혔을 때 'Bump' 문자열
-        scream = None
-        if self._do_scream:
-            scream = 'Scream' # Wumpus 객체가 쏜 화살이 맞았을 때 'Scream' 문자열
-            self._do_scream = False
-        return (stench, breeze, glitter, bump, scream)
+    def percept(self, agent): # 현재 환경 정보
+        if self[agent] == self.START_SQUARE:
+            return (None, None, None, None, None)
+        else:
+            things_adj = [ t for t,_ in self.things_near(self[agent], 1) #에이전트 근처에 있는 모든 객체를 저장
+                    if not isinstance(t, ExplorerAgent) ] #ExplorerAgent는 이웃 객체가 아니므로, things_adj 리스트에서 제외
+            stench = 'Stench' if any([isinstance(x, Wumpus) for x in things_adj])\
+                    else None # 주변에 Wumpus 객체가 있는 경우 'Stench' 문자열 + 그렇지 않은 경우 None을 저장
+            breeze = 'Breeze' if any([isinstance(x, Pit) for x in things_adj])\
+                    else None #변수는 주변에 Pit 객체가 있는 경우 'Breeze' 문자열 +  그렇지 않은 경우 None을 저장
+            glitter = 'Glitter' \
+                if len(self.list_things_at(self[agent], Gold)) > 0 else None #변수는 에이전트 위치에서 Gold 객체가 있는 경우 'Glitter' 문자열 + 그렇지 않은 경우 None을 저장
+            bump = ('Bump' if agent._bump else None) #에이전트가 벽에 부딪혔을 때 'Bump' 문자열
+            scream = None
+            if self._do_scream:
+                scream = 'Scream' # Wumpus 객체가 쏜 화살이 맞았을 때 'Scream' 문자열
+                self._do_scream = False
+            return (stench, breeze, glitter, bump, scream)
 
     def get_risk_assessment(self): #현재 환경에서 발생할 가능성이 있는 위험 요소를 계산
         risk = 0 #구현에서는 각각의 Pit 객체가 발생시킬 위험을 100으로 설정
@@ -119,14 +113,14 @@ class WumpusEnvironment(XYEnvironment):
             super().execute_action(agent, action) #함정이나 덫이 있는지, Wumpus 몬스터가 있는지를 검사하여 에이전트의 점수를 조정
             if self.list_things_at(self[agent], Wumpus):
                 agent.performance -= 1000
-                XYEnvironment.get_instance().move_to(agent, (0,0))
+                XYEnvironment.get_instance().move_to(agent, (1,1))
                 self.die_flag = True
                 logging.critical(
                     'You were EATEN BY THE WUMPUS!! Total score: {}'.
                     format(agent.performance))
                 self._is_done_executing = True
             if self.list_things_at(self[agent], Pit):
-                XYEnvironment.get_instance().move_to(agent, (0,0))
+                XYEnvironment.get_instance().move_to(agent, (1,1))
                 self.die_flag = True
                 agent.performance -= 1000
                 logging.critical('You fell into a PIT!! Total score: {}'.
@@ -168,18 +162,24 @@ class WumpusEnvironment(XYEnvironment):
 #urn, Forward, Grab, Shoot, Climb 중 하나가 아니면, 그냥 함수를 종료 + logging 모듈을 사용하여 디버깅 메시지를 출력
   
     def add_wumpus(self):
-        for x in range(self.width):
-            for y in range(self.height):
-                if ((self.CAN_COEXIST or (x,y) not in self.values()) and
-                        (x,y) != self.START_SQUARE and 
-                        random.random() < 0.1):
-                    self.add_thing(Wumpus(), (x,y))
+        possible_squares = [(x,y) for x in range(self.width)
+                            for y in range(self.height)
+                            if (self.CAN_COEXIST or (x,y) not in self.values()) and
+                            (x,y) != self.START_SQUARE and (x,y) != (2,1) and (x,y) != (1,2)]
+        self.add_thing(Wumpus(), random.choice(possible_squares))
+                        
                     #return
         # Wumpus가 한 번도 생성되지 않았을 경우, 무작위로 한 곳에 생성
 
     def add_gold(self): #Wumpus를 무작위로 한 곳에 배치
-        self.add_to_one_non_starting_square(Gold())
+        possible_squares = [(x,y) for x in range(self.width)
+                            for y in range(self.height)
+                            if (self.CAN_COEXIST or (x,y) not in self.values()) and
+                            (x,y) != self.START_SQUARE and (x,y) != (2,1) and (x,y) != (1,2)]
+        self.add_thing(Gold(), random.choice(possible_squares))
+                    
 
+                            
     def add_to_one_non_starting_square(self, thing):
         possible_squares = [(x,y) for x in range(self.width)
             for y in range(self.height)
@@ -191,8 +191,8 @@ class WumpusEnvironment(XYEnvironment):
     def add_pits(self, pit_prob=.1): # 각 위치에 대해 pit_prob의 확률로 Pit을 배치
         for x in range(self.width):
             for y in range(self.height):
-                if ((self.CAN_COEXIST or (x,y) not in self.values()) and
-                        (x,y) != self.START_SQUARE and 
+                if ((self.CAN_COEXIST or (x, y) not in self.values()) and
+                        (x, y) != self.START_SQUARE and (x, y) != (2, 1) and (x, y) != (1, 2) and
                         random.random() < pit_prob):
                     self.add_thing(Pit(), (x,y))
 
@@ -203,6 +203,14 @@ class WumpusEnvironment(XYEnvironment):
                         (x,y) != self.START_SQUARE and 
                         random.random() < wall_prob):
                     self.add_thing(Wall(), (x,y))
+
+    def addSideWalls(self): #모든 방면에 벽 위치
+            for i in range(self.height):
+                self.add_thing(Wall(), (self.width-1,i))
+                self.add_thing(Wall(), (0,i))
+            for i in range(self.width):
+                self.add_thing(Wall(), (i,0))
+                self.add_thing(Wall(), (i,self.height-1))
 
     def should_shutdown(self): #is_done_executing이 True이면 True를 반환
         return self._is_done_executing
