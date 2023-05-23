@@ -27,16 +27,24 @@ class ExplorerAgent(Agent):
 
 class WumpusEnvironment(XYEnvironment):
 
-    START_SQUARE = (0,0) # 환경의 시작 위치
+    START_SQUARE = (1,1) # 환경의 시작 위치
     CAN_COEXIST = False #에이전트와 다른 객체가 하나의 위치를 공유할 수 있는지 여부
     __instance = None
+    SideWalls=True #외벽 사용 유무, 사용시 6by6으로 변경 및 외벽 추가
+
     
     def __init__(self, width=4, height=4):
         if WumpusEnvironment.__instance != None:
             raise Exception("Singleton class cannot be instantiated more than once")
         else:
             WumpusEnvironment.__instance = self
-        super().__init__(width, height)
+        if self.SideWalls:
+            width=6
+            height=6
+            super().__init__(width, height)
+            self. addSideWalls() #6,6으로 설정하여 사방에 벽 생성
+        else:
+            super().__init__(width, height)
         self.add_wumpus() #웜푸스 추가
         self.add_pits() #구덩이 추가
         #self.add_walls()# 벽 추가
@@ -44,6 +52,7 @@ class WumpusEnvironment(XYEnvironment):
         self._is_done_executing = False #인스턴스 변수를 False로 초기화
         self._do_scream = False #이 변수는 웜푸스가 에이전트를 공격했는지 여부
         self.die_flag = False
+        
         
     @classmethod
     def get_instance(cls):
@@ -203,6 +212,14 @@ class WumpusEnvironment(XYEnvironment):
                         (x,y) != self.START_SQUARE and 
                         random.random() < wall_prob):
                     self.add_thing(Wall(), (x,y))
+
+    def addSideWalls(self): #모든 방면에 벽 위치
+            for i in range(self.height):
+                self.add_thing(Wall(), (self.width-1,i))
+                self.add_thing(Wall(), (0,i))
+            for i in range(self.width):
+                self.add_thing(Wall(), (i,0))
+                self.add_thing(Wall(), (i,self.height-1))
 
     def should_shutdown(self): #is_done_executing이 True이면 True를 반환
         return self._is_done_executing
