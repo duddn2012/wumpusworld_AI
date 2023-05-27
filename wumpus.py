@@ -16,13 +16,13 @@ class ExplorerAgent(Agent):
     def __init__(self):
         super().__init__()
         self._bump = False #에이전트가 벽에 부딪혔는지 여부를 나타내는 플래그
-        self._facing_direction = 'Up' #현재 에이전트가 바라보고 있는 방향
+        self._facing_direction = 'Right' #현재 에이전트가 바라보고 있는 방향
         self._holding = [ Arrow() ] #에이전트가 들고 있는 아이템을 저장하는 리스트
 
     @property
     def image_filename(self): #image_filename은 현재 에이전트가 바라보는 방향에 따라 이미지 파일 이름을 반환하는 속성
         return self.images[self._facing_direction if
-            self._facing_direction else 'Up']
+            self._facing_direction else 'Right']
 #_facing_direction이 없으면 기본적으로 'Up' 방향의 이미지 파일 이름을 반환
 
 class WumpusEnvironment(XYEnvironment):
@@ -119,7 +119,9 @@ class WumpusEnvironment(XYEnvironment):
             super().execute_action(agent, action) #함정이나 덫이 있는지, Wumpus 몬스터가 있는지를 검사하여 에이전트의 점수를 조정
             if self.list_things_at(self[agent], Wumpus):
                 agent.performance -= 1000
+                
                 XYEnvironment.get_instance().move_to(agent, (0,0))
+                Environment.get_instance().execute_action(self, 'TurnRight')
                 self.die_flag = True
                 logging.critical(
                     'You were EATEN BY THE WUMPUS!! Total score: {}'.
@@ -127,6 +129,7 @@ class WumpusEnvironment(XYEnvironment):
                 self._is_done_executing = True
             if self.list_things_at(self[agent], Pit):
                 XYEnvironment.get_instance().move_to(agent, (0,0))
+                Environment.get_instance().execute_action(self, 'TurnRight')
                 self.die_flag = True
                 agent.performance -= 1000
                 logging.critical('You fell into a PIT!! Total score: {}'.

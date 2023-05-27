@@ -12,7 +12,7 @@ UP = 0
 DOWN = 90
 LEFT = 135
 RIGHT = 45
-PIT_PRIOR = 0.2 # the probability of a location having a pit
+PIT_PRIOR = 0.1 # the probability of a location having a pit
 directions = [UP, DOWN, LEFT, RIGHT]
 
 def is_valid(x, y):  # x,y 좌표 값이 유효한 좌표인지 확인하는 함수다.
@@ -82,7 +82,9 @@ class KB(): #에이전트의 세계에 대한 지식을 나타내는 Knowledge B
         return self.agent.get_location()
 
     def set_location_start(self):
-        self.agent.set_location_start()
+        #self.agent.set_location_start()
+        #self.agent.set_direction_start()
+        self.agent = AgentState()
 
     def get_direction(self):
         return self.agent.direction
@@ -241,7 +243,7 @@ class KB(): #에이전트의 세계에 대한 지식을 나타내는 Knowledge B
 class AgentState(): #에이전트의 상태를 정의
 
      
-    def __init__(self, x=0, y=0, d=0, c=0):
+    def __init__(self, x=0, y=0, d=RIGHT, c=0):
         self.direction = d
         self.has_gold = False
         self.has_arrow = True
@@ -272,6 +274,9 @@ class AgentState(): #에이전트의 상태를 정의
     def set_location_start(self):
         self.x_pos =0
         self.y_pos =0
+
+    def set_direction_start(self):
+        self.direction = RIGHT
 
     def get_direction(self):
         if self.direction == UP:
@@ -381,6 +386,7 @@ class ashtabna_ExplorerAgent(ExplorerAgent):
 
         if WumpusEnvironment.get_instance().die_flag:
             self.kb.set_location_start()
+            #agentState()
             WumpusEnvironment.get_instance().die_flag = False
 
         for row in range(4):#for 반복문을 사용하여 던전 안의 모든 위치에 대해, 그 위치에 대한 에이전트 상태를 만든다.
